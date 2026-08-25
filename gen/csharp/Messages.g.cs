@@ -1469,9 +1469,12 @@ public sealed class AttackEvent
     public ulong TargetHp;
     public ulong TargetShield;
     public bool Missed;
+    public string AmmoId = "";
+    public bool Skilled;
 
     public void Validate()
     {
+        if (AmmoId.Length > 64) throw new ProtocolViolationException("AttackEvent.ammo_id demasiado largo");
     }
 
     internal void EncodeFields(MemoryStream s)
@@ -1483,6 +1486,8 @@ public sealed class AttackEvent
         Wire.WriteTag(s, 5, 0); Wire.WriteVarint(s, TargetHp);
         Wire.WriteTag(s, 6, 0); Wire.WriteVarint(s, TargetShield);
         Wire.WriteTag(s, 7, 0); Wire.WriteVarint(s, Missed ? 1UL : 0UL);
+        Wire.WriteTag(s, 8, 2); Wire.WriteString(s, AmmoId);
+        Wire.WriteTag(s, 9, 0); Wire.WriteVarint(s, Skilled ? 1UL : 0UL);
     }
 
     internal static AttackEvent DecodeFrom(ReadOnlySpan<byte> b, int pos)
@@ -1501,6 +1506,8 @@ public sealed class AttackEvent
                 case 5: m.TargetHp = Wire.ReadVarint(b, ref pos); break;
                 case 6: m.TargetShield = Wire.ReadVarint(b, ref pos); break;
                 case 7: m.Missed = Wire.ReadVarint(b, ref pos) != 0; break;
+                case 8: m.AmmoId = Wire.ReadString(b, ref pos); break;
+                case 9: m.Skilled = Wire.ReadVarint(b, ref pos) != 0; break;
                 default: Wire.Skip(b, ref pos, wt); break;
             }
         }

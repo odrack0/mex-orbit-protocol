@@ -210,6 +210,11 @@ messages:
       - { tag: 5, name: target_hp, type: uint }             # POST-daño, siempre
       - { tag: 6, name: target_shield, type: uint }
       - { tag: 7, name: missed, type: bool }
+      # el aspecto del disparo: la municion define color y forma en su JSON
+      # (el legado mandaba un indice de sheet; aqui viaja el loot_id, legible)
+      - { tag: 8, name: ammo_id, type: string, max_len: 64 }
+      # skilled = el disparo potenciado del perfil de piloto: haz grueso y brillante
+      - { tag: 9, name: skilled, type: bool }
   EntityDestroyed:
     id: 104
     dir: s2c
