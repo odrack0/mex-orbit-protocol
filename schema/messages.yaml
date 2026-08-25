@@ -36,6 +36,10 @@ structs:
       - { tag: 2, name: label_key, type: string, max_len: 64 }
       - { tag: 3, name: cost_credits, type: uint }
       - { tag: 4, name: available, type: bool }
+  MaterialPrice:
+    fields:
+      - { tag: 1, name: material_id, type: string, max_len: 64 }
+      - { tag: 2, name: price_credits, type: uint }
 
 messages:
   # ============ 1-49 · Sesión ============
@@ -111,6 +115,10 @@ messages:
       - { tag: 3, name: limits_x, type: uint, min: 1000, max: 100000 }
       - { tag: 4, name: limits_y, type: uint, min: 1000, max: 100000 }
       - { tag: 5, name: cargo_risk_pct, type: uint, max: 100 }
+      # la estacion: su posicion y radio seguro viajan (el legado los adivinaba)
+      - { tag: 6, name: station_x, type: uint, max: 100000 }
+      - { tag: 7, name: station_y, type: uint, max: 100000 }
+      - { tag: 8, name: station_range, type: uint, max: 10000 }
   EntitySpawn:
     id: 52
     dir: s2c
@@ -269,7 +277,7 @@ messages:
     fields:
       - { tag: 1, name: request_id, type: uint }
       - { tag: 2, name: material_id, type: string, max_len: 64 }
-      - { tag: 3, name: amount, type: uint, min: 1, max: 1000000 }
+      - { tag: 3, name: amount, type: uint, max: 1000000 }   # 0 = vender todo
   SellResult:
     id: 157
     dir: s2c
@@ -277,6 +285,34 @@ messages:
       - { tag: 1, name: request_id, type: uint }
       - { tag: 2, name: credits_gained, type: uint }
       - { tag: 3, name: new_credits, type: uint }
+  # ---- la base (E2/I6) ----
+  # Descargar la bodega en la estacion: dispara el refinado automatico
+  UnloadCargo:
+    id: 158
+    dir: c2s
+    rate_limit: { per_second: 1, burst: 2 }
+    fields:
+      - { tag: 1, name: request_id, type: uint }
+  UnloadResult:
+    id: 159
+    dir: s2c
+    fields:
+      - { tag: 1, name: request_id, type: uint }
+      - { tag: 2, name: stored, type: struct, struct: MaterialAmount, repeated: true }
+      - { tag: 3, name: refined, type: struct, struct: MaterialAmount, repeated: true }
+  # Precios del NPC (llegan al entrar en rango de la estacion)
+  NpcPrices:
+    id: 160
+    dir: s2c
+    fields:
+      - { tag: 1, name: prices, type: struct, struct: MaterialPrice, repeated: true }
+  # Entrar/salir del rango de la estacion: abre o cierra su panel
+  StationRange:
+    id: 161
+    dir: s2c
+    fields:
+      - { tag: 1, name: in_range, type: bool }
+      - { tag: 2, name: station_id, type: uint }
 
   # ============ 200-249 · Chat ============
   ChatSend:

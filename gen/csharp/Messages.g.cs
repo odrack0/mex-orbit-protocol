@@ -236,6 +236,43 @@ public sealed class RespawnOption
     internal static RespawnOption DecodeStruct(ReadOnlySpan<byte> b) => DecodeFrom(b, 0);
 }
 
+public sealed class MaterialPrice
+{
+    public string MaterialId = "";
+    public ulong PriceCredits;
+
+    public void Validate()
+    {
+        if (MaterialId.Length > 64) throw new ProtocolViolationException("MaterialPrice.material_id demasiado largo");
+    }
+
+    internal void EncodeFields(MemoryStream s)
+    {
+        Wire.WriteTag(s, 1, 2); Wire.WriteString(s, MaterialId);
+        Wire.WriteTag(s, 2, 0); Wire.WriteVarint(s, PriceCredits);
+    }
+
+    internal static MaterialPrice DecodeFrom(ReadOnlySpan<byte> b, int pos)
+    {
+        var m = new MaterialPrice();
+        while (pos < b.Length)
+        {
+            ulong key = Wire.ReadVarint(b, ref pos);
+            int tag = (int)(key >> 3), wt = (int)(key & 7);
+            switch (tag)
+            {
+                case 1: m.MaterialId = Wire.ReadString(b, ref pos); break;
+                case 2: m.PriceCredits = Wire.ReadVarint(b, ref pos); break;
+                default: Wire.Skip(b, ref pos, wt); break;
+            }
+        }
+        m.Validate();
+        return m;
+    }
+
+    internal static MaterialPrice DecodeStruct(ReadOnlySpan<byte> b) => DecodeFrom(b, 0);
+}
+
 public sealed class Hello
 {
     public const int MsgId = 1;
@@ -803,6 +840,9 @@ public sealed class EnterMap
     public ulong LimitsX;
     public ulong LimitsY;
     public ulong CargoRiskPct;
+    public ulong StationX;
+    public ulong StationY;
+    public ulong StationRange;
 
     public void Validate()
     {
@@ -812,6 +852,9 @@ public sealed class EnterMap
         if (LimitsY < 1000) throw new ProtocolViolationException("EnterMap.limits_y < 1000");
         if (LimitsY > 100000) throw new ProtocolViolationException("EnterMap.limits_y > 100000");
         if (CargoRiskPct > 100) throw new ProtocolViolationException("EnterMap.cargo_risk_pct > 100");
+        if (StationX > 100000) throw new ProtocolViolationException("EnterMap.station_x > 100000");
+        if (StationY > 100000) throw new ProtocolViolationException("EnterMap.station_y > 100000");
+        if (StationRange > 10000) throw new ProtocolViolationException("EnterMap.station_range > 10000");
     }
 
     internal void EncodeFields(MemoryStream s)
@@ -821,6 +864,9 @@ public sealed class EnterMap
         Wire.WriteTag(s, 3, 0); Wire.WriteVarint(s, LimitsX);
         Wire.WriteTag(s, 4, 0); Wire.WriteVarint(s, LimitsY);
         Wire.WriteTag(s, 5, 0); Wire.WriteVarint(s, CargoRiskPct);
+        Wire.WriteTag(s, 6, 0); Wire.WriteVarint(s, StationX);
+        Wire.WriteTag(s, 7, 0); Wire.WriteVarint(s, StationY);
+        Wire.WriteTag(s, 8, 0); Wire.WriteVarint(s, StationRange);
     }
 
     internal static EnterMap DecodeFrom(ReadOnlySpan<byte> b, int pos)
@@ -837,6 +883,9 @@ public sealed class EnterMap
                 case 3: m.LimitsX = Wire.ReadVarint(b, ref pos); break;
                 case 4: m.LimitsY = Wire.ReadVarint(b, ref pos); break;
                 case 5: m.CargoRiskPct = Wire.ReadVarint(b, ref pos); break;
+                case 6: m.StationX = Wire.ReadVarint(b, ref pos); break;
+                case 7: m.StationY = Wire.ReadVarint(b, ref pos); break;
+                case 8: m.StationRange = Wire.ReadVarint(b, ref pos); break;
                 default: Wire.Skip(b, ref pos, wt); break;
             }
         }
@@ -1988,7 +2037,6 @@ public sealed class SellToNpc
     public void Validate()
     {
         if (MaterialId.Length > 64) throw new ProtocolViolationException("SellToNpc.material_id demasiado largo");
-        if (Amount < 1) throw new ProtocolViolationException("SellToNpc.amount < 1");
         if (Amount > 1000000) throw new ProtocolViolationException("SellToNpc.amount > 1000000");
     }
 
@@ -2087,6 +2135,232 @@ public sealed class SellResult
         int pos = 0;
         ulong id = Wire.ReadVarint(b, ref pos);
         if (id != 157) throw new ProtocolViolationException($"msg_id {id} != 157");
+        return DecodeFrom(b, pos);
+    }
+}
+
+public sealed class UnloadCargo
+{
+    public const int MsgId = 158;
+    public ulong RequestId;
+
+    public void Validate()
+    {
+    }
+
+    internal void EncodeFields(MemoryStream s)
+    {
+        Wire.WriteTag(s, 1, 0); Wire.WriteVarint(s, RequestId);
+    }
+
+    internal static UnloadCargo DecodeFrom(ReadOnlySpan<byte> b, int pos)
+    {
+        var m = new UnloadCargo();
+        while (pos < b.Length)
+        {
+            ulong key = Wire.ReadVarint(b, ref pos);
+            int tag = (int)(key >> 3), wt = (int)(key & 7);
+            switch (tag)
+            {
+                case 1: m.RequestId = Wire.ReadVarint(b, ref pos); break;
+                default: Wire.Skip(b, ref pos, wt); break;
+            }
+        }
+        m.Validate();
+        return m;
+    }
+
+    public byte[] Encode()
+    {
+        Validate();
+        var s = new MemoryStream();
+        Wire.WriteVarint(s, 158);
+        EncodeFields(s);
+        return s.ToArray();
+    }
+
+    public static UnloadCargo Decode(ReadOnlySpan<byte> b)
+    {
+        int pos = 0;
+        ulong id = Wire.ReadVarint(b, ref pos);
+        if (id != 158) throw new ProtocolViolationException($"msg_id {id} != 158");
+        return DecodeFrom(b, pos);
+    }
+}
+
+public sealed class UnloadResult
+{
+    public const int MsgId = 159;
+    public ulong RequestId;
+    public List<MaterialAmount> Stored = new();
+    public List<MaterialAmount> Refined = new();
+
+    public void Validate()
+    {
+        foreach (var v in Stored)
+        {
+            v.Validate();
+        }
+        foreach (var v in Refined)
+        {
+            v.Validate();
+        }
+    }
+
+    internal void EncodeFields(MemoryStream s)
+    {
+        Wire.WriteTag(s, 1, 0); Wire.WriteVarint(s, RequestId);
+        foreach (var v in Stored)
+        {
+            Wire.WriteTag(s, 2, 2); Wire.WriteStruct(s, v.EncodeFields);
+        }
+        foreach (var v in Refined)
+        {
+            Wire.WriteTag(s, 3, 2); Wire.WriteStruct(s, v.EncodeFields);
+        }
+    }
+
+    internal static UnloadResult DecodeFrom(ReadOnlySpan<byte> b, int pos)
+    {
+        var m = new UnloadResult();
+        while (pos < b.Length)
+        {
+            ulong key = Wire.ReadVarint(b, ref pos);
+            int tag = (int)(key >> 3), wt = (int)(key & 7);
+            switch (tag)
+            {
+                case 1: m.RequestId = Wire.ReadVarint(b, ref pos); break;
+                case 2: m.Stored.Add(MaterialAmount.DecodeStruct(Wire.ReadSlice(b, ref pos))); break;
+                case 3: m.Refined.Add(MaterialAmount.DecodeStruct(Wire.ReadSlice(b, ref pos))); break;
+                default: Wire.Skip(b, ref pos, wt); break;
+            }
+        }
+        m.Validate();
+        return m;
+    }
+
+    public byte[] Encode()
+    {
+        Validate();
+        var s = new MemoryStream();
+        Wire.WriteVarint(s, 159);
+        EncodeFields(s);
+        return s.ToArray();
+    }
+
+    public static UnloadResult Decode(ReadOnlySpan<byte> b)
+    {
+        int pos = 0;
+        ulong id = Wire.ReadVarint(b, ref pos);
+        if (id != 159) throw new ProtocolViolationException($"msg_id {id} != 159");
+        return DecodeFrom(b, pos);
+    }
+}
+
+public sealed class NpcPrices
+{
+    public const int MsgId = 160;
+    public List<MaterialPrice> Prices = new();
+
+    public void Validate()
+    {
+        foreach (var v in Prices)
+        {
+            v.Validate();
+        }
+    }
+
+    internal void EncodeFields(MemoryStream s)
+    {
+        foreach (var v in Prices)
+        {
+            Wire.WriteTag(s, 1, 2); Wire.WriteStruct(s, v.EncodeFields);
+        }
+    }
+
+    internal static NpcPrices DecodeFrom(ReadOnlySpan<byte> b, int pos)
+    {
+        var m = new NpcPrices();
+        while (pos < b.Length)
+        {
+            ulong key = Wire.ReadVarint(b, ref pos);
+            int tag = (int)(key >> 3), wt = (int)(key & 7);
+            switch (tag)
+            {
+                case 1: m.Prices.Add(MaterialPrice.DecodeStruct(Wire.ReadSlice(b, ref pos))); break;
+                default: Wire.Skip(b, ref pos, wt); break;
+            }
+        }
+        m.Validate();
+        return m;
+    }
+
+    public byte[] Encode()
+    {
+        Validate();
+        var s = new MemoryStream();
+        Wire.WriteVarint(s, 160);
+        EncodeFields(s);
+        return s.ToArray();
+    }
+
+    public static NpcPrices Decode(ReadOnlySpan<byte> b)
+    {
+        int pos = 0;
+        ulong id = Wire.ReadVarint(b, ref pos);
+        if (id != 160) throw new ProtocolViolationException($"msg_id {id} != 160");
+        return DecodeFrom(b, pos);
+    }
+}
+
+public sealed class StationRange
+{
+    public const int MsgId = 161;
+    public bool InRange;
+    public ulong StationId;
+
+    public void Validate()
+    {
+    }
+
+    internal void EncodeFields(MemoryStream s)
+    {
+        Wire.WriteTag(s, 1, 0); Wire.WriteVarint(s, InRange ? 1UL : 0UL);
+        Wire.WriteTag(s, 2, 0); Wire.WriteVarint(s, StationId);
+    }
+
+    internal static StationRange DecodeFrom(ReadOnlySpan<byte> b, int pos)
+    {
+        var m = new StationRange();
+        while (pos < b.Length)
+        {
+            ulong key = Wire.ReadVarint(b, ref pos);
+            int tag = (int)(key >> 3), wt = (int)(key & 7);
+            switch (tag)
+            {
+                case 1: m.InRange = Wire.ReadVarint(b, ref pos) != 0; break;
+                case 2: m.StationId = Wire.ReadVarint(b, ref pos); break;
+                default: Wire.Skip(b, ref pos, wt); break;
+            }
+        }
+        m.Validate();
+        return m;
+    }
+
+    public byte[] Encode()
+    {
+        Validate();
+        var s = new MemoryStream();
+        Wire.WriteVarint(s, 161);
+        EncodeFields(s);
+        return s.ToArray();
+    }
+
+    public static StationRange Decode(ReadOnlySpan<byte> b)
+    {
+        int pos = 0;
+        ulong id = Wire.ReadVarint(b, ref pos);
+        if (id != 161) throw new ProtocolViolationException($"msg_id {id} != 161");
         return DecodeFrom(b, pos);
     }
 }
