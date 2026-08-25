@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>ProtocolSpike</AssemblyName>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- el contrato generado se compila tal cual, sin copia -->
+    <Compile Include="..\..\gen\csharp\Messages.g.cs" Link="Messages.g.cs" />
+  </ItemGroup>
+</Project>

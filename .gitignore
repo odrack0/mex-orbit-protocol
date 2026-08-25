@@ -1,0 +1,15 @@
+# .NET
+bin/
+obj/
+
+# Godot
+.godot/
+
+# artefactos del spike (se regeneran corriendo las pruebas)
+spike/out/
+spike/gdscript/messages_g.gd
+spike/gdscript/messages_pb.gd
+
+# Python
+__pycache__/
+*.pyc

@@ -149,7 +149,13 @@ Cobertura E2: *login → conectar → volar → matar un Vex → recoger su carg
 | Rate limits/rangos en el contrato | no expresable (extensiones custom) | **de primera clase en el esquema** |
 | Peso runtime en Godot | dependencia externa | cero dependencias |
 
-**Hipótesis de trabajo** (a confirmar en el spike): esquema propio en YAML con wire format estilo protobuf, porque los metadatos anti-cheat (rangos, rate limits) son parte del contrato, no un extra. El spike: 3 mensajes (`Hello`, `MoveIntent`, `EntitySpawn`) generados y compilando en C# + GDScript por ambas rutas; se mide fricción y se decide con evidencia. **La decisión final se registra aquí.**
+**DECISIÓN (spike corrido el 2026-08-25): esquema propio.** Ambas rutas alcanzaron el roundtrip byte-exacto
+C# ↔ GDScript (godobuf funcionó incluso en Godot 4.7.1); el factor decisivo fue que **los rangos y rate limits
+son inexpresables en protobuf** — `target_x=999999` codifica sin queja en Google.Protobuf, mientras el esquema
+propio lo rechaza en encode y decode desde el contrato mismo. Con protobuf, los metadatos anti-cheat serían un
+sidecar paralelo que puede desincronizarse: la clase de bug que este protocolo existe para impedir. Evidencia
+completa y reproducible en [`../spike/README.md`](../spike/README.md); el generador vive en `tools/gen.py` y
+el esquema en `schema/messages.yaml`.
 
 ## 7. Ejemplo de definición (formato del esquema propio, si gana el spike)
 

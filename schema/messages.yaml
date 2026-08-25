@@ -1,0 +1,40 @@
+# Esquema del protocolo MexOrbit — spike E1/I2 (3 mensajes de muestra).
+# Una sola definicion -> C# y GDScript generados. Los metadatos anti-cheat
+# (rangos, rate limits) son parte del contrato, no un extra.
+protocol_version: 1
+
+enums:
+  EntityKind:
+    PLAYER: 0
+    NPC: 1
+
+messages:
+  Hello:
+    id: 1
+    dir: c2s
+    fields:
+      - { tag: 1, name: protocol_version, type: uint,   min: 1, max: 1000 }
+      - { tag: 2, name: game_ticket,      type: string, max_len: 512 }
+
+  MoveIntent:
+    id: 60
+    dir: c2s
+    rate_limit: { per_second: 10, burst: 4 }
+    fields:
+      - { tag: 1, name: seq,      type: uint }
+      - { tag: 2, name: target_x, type: uint, min: 0, max: 60000 }
+      - { tag: 3, name: target_y, type: uint, min: 0, max: 60000 }
+
+  EntitySpawn:
+    id: 52
+    dir: s2c
+    fields:
+      - { tag: 1, name: entity_id, type: uint }
+      - { tag: 2, name: kind,      type: enum, enum: EntityKind }
+      - { tag: 3, name: type_id,   type: string, max_len: 64 }
+      - { tag: 4, name: name,      type: string, max_len: 64 }
+      - { tag: 5, name: faction,   type: uint,  max: 8 }
+      - { tag: 6, name: x,         type: uint,  max: 60000 }
+      - { tag: 7, name: y,         type: uint,  max: 60000 }
+      - { tag: 8, name: hp_pct,    type: float }
+      - { tag: 9, name: speed,     type: uint,  max: 2000 }

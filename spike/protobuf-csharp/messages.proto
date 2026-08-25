@@ -1,0 +1,36 @@
+// Spike I2 — los mismos 3 mensajes en protobuf, para comparar fricción.
+// Nótese lo que protobuf NO puede expresar del contrato: rangos (min/max),
+// max_len, rate limits. Eso queda fuera del .proto y habría que duplicarlo aparte.
+syntax = "proto3";
+
+package mexorbit;
+
+option csharp_namespace = "MexOrbit.ProtocolPb";
+
+enum EntityKind {
+  ENTITY_KIND_PLAYER = 0;
+  ENTITY_KIND_NPC = 1;
+}
+
+message Hello {
+  uint32 protocol_version = 1;
+  string game_ticket = 2;
+}
+
+message MoveIntent {
+  uint64 seq = 1;
+  uint32 target_x = 2;
+  uint32 target_y = 3;
+}
+
+message EntitySpawn {
+  uint64 entity_id = 1;
+  EntityKind kind = 2;
+  string type_id = 3;
+  string name = 4;
+  uint32 faction = 5;
+  uint32 x = 6;
+  uint32 y = 7;
+  float hp_pct = 8;
+  uint32 speed = 9;
+}

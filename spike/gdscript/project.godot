@@ -1,0 +1,5 @@
+; Proyecto minimo para correr la prueba del contrato en godot --headless.
+config_version=5
+
+[application]
+config/name="ProtocolSpike"
