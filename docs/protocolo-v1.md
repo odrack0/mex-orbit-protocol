@@ -36,7 +36,7 @@
 ```
 C→S  Hello      { protocol_version, game_ticket }        ← ticket JWT de la api (ver auth-v1)
 S→C  Welcome    { account_id, reconnect_token, server_time_ms, tick_rate, motd? }
-  ó  Error      { code: BAD_TICKET | VERSION_UNSUPPORTED | BANNED | ... }
+  ó  ErrorReply { code: BAD_TICKET | VERSION_UNSUPPORTED | BANNED | ... }
 ```
 
 - La versión se **negocia y valida** (el server acepta `N` y `N−1` durante rollouts). Nunca "se lee y se ignora".
@@ -52,7 +52,7 @@ S→C  Welcome    { account_id, reconnect_token, server_time_ms, tick_rate, motd
 ```
 C→S  Resume     { protocol_version, reconnect_token }
 S→C  ResumeOk   { }  + re-sincronización completa (igual que EnterMap)
-  ó  Error      { code: RESUME_EXPIRED }
+  ó  ErrorReply { code: RESUME_EXPIRED }
 ```
 
 - Tras caída de socket, la nave permanece en el mundo **60 s**; dentro de esa ventana el resume evita pasar por la api. La re-sincronización es **estado completo**, no replay de deltas (simple y suficiente en v1).
@@ -78,7 +78,7 @@ Cobertura E2: *login → conectar → volar → matar un Vex → recoger su carg
 | `Welcome` | S→C | account_id, reconnect_token, server_time_ms, tick_rate |
 | `Resume` / `ResumeOk` | C→S / S→C | reconnect_token / — |
 | `Ping` / `Pong` | S→C / C→S | nonce |
-| `Error` | S→C | request_id?, code, detail? |
+| `ErrorReply` | S→C | request_id?, code, detail? — el nombre evita la colisión con el tipo nativo `Error` de Godot |
 | `SessionReplaced` | S→C | — |
 | `LogoutRequest` / `LogoutCountdown` / `LogoutDone` | C→S / S→C / S→C | — / seconds_left (0=abortado) / — |
 
@@ -110,7 +110,7 @@ Cobertura E2: *login → conectar → volar → matar un Vex → recoger su carg
 | `BoxSpawn` | S→C | box_id, box_type, x, y |
 | `BoxDespawn` | S→C | box_id, reason (COLLECTED/EXPIRED/RANGE) — sin bools mentirosos |
 | `CollectBox` | C→S | request_id, box_id — **el server valida distancia y estado** |
-| `CollectResult` | S→C | request_id, drops[{material_id, amount}] — o `Error{TOO_FAR/GONE}` |
+| `CollectResult` | S→C | request_id, drops[{material_id, amount}] — o `ErrorReply{TOO_FAR/GONE}` |
 | `StorageState` | S→C | materials[{material_id, amount}] — almacén completo al entrar; deltas después |
 | `StorageDelta` | S→C | material_id, delta, reason (COLLECT/REFINE/SELL) |
 | `SellToNpc` | C→S | request_id, material_id, amount |

@@ -55,6 +55,28 @@ func _initialize() -> void:
 		_fallo("EntitySpawn: re-encode no es byte-exacto")
 		ok = false
 
+	# --- CollectResult: repeated de submensajes ---
+	var cb := _leer("collect_result.bin")
+	var c := P.CollectResult.decode(cb)
+	if c.request_id != 7 or c.drops.size() != 2 \
+			or c.drops[0].material_id != "material_asterium" or c.drops[0].amount != 24 \
+			or c.drops[1].material_id != "material_coronium" or c.drops[1].amount != 3:
+		_fallo("CollectResult: valores inesperados")
+		ok = false
+	if c.encode() != cb:
+		_fallo("CollectResult: re-encode no es byte-exacto")
+		ok = false
+
+	# --- StorageDelta: sint negativo ---
+	var db := _leer("storage_delta.bin")
+	var d := P.StorageDelta.decode(db)
+	if d.delta != -30 or d.reason != P.StorageReason.REFINE_IN:
+		_fallo("StorageDelta: valores inesperados")
+		ok = false
+	if d.encode() != db:
+		_fallo("StorageDelta: re-encode no es byte-exacto")
+		ok = false
+
 	if ok:
-		print("GDSCRIPT OK — decodifica lo que C# codifico y re-codifica byte-exacto")
+		print("GDSCRIPT OK — catalogo completo: decodifica lo de C# y re-codifica byte-exacto (incl. repeated struct y sint)")
 		quit(0)

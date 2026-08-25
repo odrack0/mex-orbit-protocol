@@ -1,40 +1,314 @@
-# Esquema del protocolo MexOrbit — spike E1/I2 (3 mensajes de muestra).
-# Una sola definicion -> C# y GDScript generados. Los metadatos anti-cheat
-# (rangos, rate limits) son parte del contrato, no un extra.
+# Esquema del protocolo MexOrbit v1 — catálogo completo del vertical slice (E2/I1).
+# Fuente de verdad del contrato: docs/protocolo-v1.md §4. Una sola definición -> C# y GDScript.
+# Reglas: los tags jamás se renumeran; campos nuevos = tags nuevos; los rangos y
+# rate limits son parte del contrato y se generan en ambos lados.
 protocol_version: 1
 
 enums:
-  EntityKind:
-    PLAYER: 0
-    NPC: 1
+  EntityKind: { PLAYER: 0, NPC: 1 }
+  DespawnReason: { RANGE: 0, LEFT: 1, DEAD: 2 }
+  BoxDespawnReason: { COLLECTED: 0, EXPIRED: 1, RANGE: 2 }
+  Weapon: { LASER: 0 }
+  DeathCause: { NPC: 0, PLAYER: 1 }
+  StorageReason: { COLLECT: 0, REFINE_IN: 1, REFINE_OUT: 2, SELL: 3, UNLOAD: 4 }
+  ChatChannel: { GLOBAL: 0, FACTION: 1, CLAN: 2 }
+  ErrorCode:
+    GENERIC: 0
+    BAD_TICKET: 1
+    VERSION_UNSUPPORTED: 2
+    BANNED: 3
+    RESUME_EXPIRED: 4
+    TOO_FAR: 5
+    GONE: 6
+    INSUFFICIENT: 7
+    RATE_LIMITED: 8
+    INVALID: 9
+
+# Submensajes: viajan solo dentro de otros mensajes (wiretype 2, sin msg_id propio).
+structs:
+  MaterialAmount:
+    fields:
+      - { tag: 1, name: material_id, type: string, max_len: 64 }   # loot_id del catálogo
+      - { tag: 2, name: amount, type: uint, max: 1000000 }
+  RespawnOption:
+    fields:
+      - { tag: 1, name: option_id, type: uint, max: 16 }
+      - { tag: 2, name: label_key, type: string, max_len: 64 }
+      - { tag: 3, name: cost_credits, type: uint }
+      - { tag: 4, name: available, type: bool }
 
 messages:
+  # ============ 1-49 · Sesión ============
   Hello:
     id: 1
     dir: c2s
     fields:
-      - { tag: 1, name: protocol_version, type: uint,   min: 1, max: 1000 }
-      - { tag: 2, name: game_ticket,      type: string, max_len: 512 }
-
-  MoveIntent:
-    id: 60
-    dir: c2s
-    rate_limit: { per_second: 10, burst: 4 }
+      - { tag: 1, name: protocol_version, type: uint, min: 1, max: 1000 }
+      - { tag: 2, name: game_ticket, type: string, max_len: 512 }
+  Welcome:
+    id: 2
+    dir: s2c
     fields:
-      - { tag: 1, name: seq,      type: uint }
-      - { tag: 2, name: target_x, type: uint, min: 0, max: 60000 }
-      - { tag: 3, name: target_y, type: uint, min: 0, max: 60000 }
+      - { tag: 1, name: account_id, type: uint }
+      - { tag: 2, name: reconnect_token, type: string, max_len: 128 }
+      - { tag: 3, name: server_time_ms, type: uint }
+      - { tag: 4, name: tick_rate, type: uint, min: 1, max: 100 }
+  Resume:
+    id: 3
+    dir: c2s
+    fields:
+      - { tag: 1, name: protocol_version, type: uint, min: 1, max: 1000 }
+      - { tag: 2, name: reconnect_token, type: string, max_len: 128 }
+  ResumeOk:
+    id: 4
+    dir: s2c
+    fields: []
+  Ping:
+    id: 5
+    dir: s2c
+    fields:
+      - { tag: 1, name: nonce, type: uint }
+  Pong:
+    id: 6
+    dir: c2s
+    rate_limit: { per_second: 2, burst: 3 }
+    fields:
+      - { tag: 1, name: nonce, type: uint }
+  # "Error" a secas colisiona con el tipo nativo Error de Godot; de ahí el nombre.
+  ErrorReply:
+    id: 7
+    dir: s2c
+    fields:
+      - { tag: 1, name: request_id, type: uint }          # 0 = sin correlación
+      - { tag: 2, name: code, type: enum, enum: ErrorCode }
+      - { tag: 3, name: detail, type: string, max_len: 256 }
+  SessionReplaced:
+    id: 8
+    dir: s2c
+    fields: []
+  LogoutRequest:
+    id: 9
+    dir: c2s
+    rate_limit: { per_second: 1, burst: 2 }
+    fields: []
+  LogoutCountdown:
+    id: 10
+    dir: s2c
+    fields:
+      - { tag: 1, name: seconds_left, type: uint, max: 60 }   # 0 = abortado
+  LogoutDone:
+    id: 11
+    dir: s2c
+    fields: []
 
+  # ============ 50-99 · Mundo y movimiento ============
+  EnterMap:
+    id: 50
+    dir: s2c
+    fields:
+      - { tag: 1, name: map_id, type: uint }
+      - { tag: 2, name: map_code, type: string, max_len: 16 }
+      - { tag: 3, name: limits_x, type: uint, min: 1000, max: 100000 }
+      - { tag: 4, name: limits_y, type: uint, min: 1000, max: 100000 }
+      - { tag: 5, name: cargo_risk_pct, type: uint, max: 100 }
   EntitySpawn:
     id: 52
     dir: s2c
     fields:
       - { tag: 1, name: entity_id, type: uint }
-      - { tag: 2, name: kind,      type: enum, enum: EntityKind }
-      - { tag: 3, name: type_id,   type: string, max_len: 64 }
-      - { tag: 4, name: name,      type: string, max_len: 64 }
-      - { tag: 5, name: faction,   type: uint,  max: 8 }
-      - { tag: 6, name: x,         type: uint,  max: 60000 }
-      - { tag: 7, name: y,         type: uint,  max: 60000 }
-      - { tag: 8, name: hp_pct,    type: float }
-      - { tag: 9, name: speed,     type: uint,  max: 2000 }
+      - { tag: 2, name: kind, type: enum, enum: EntityKind }
+      - { tag: 3, name: type_id, type: string, max_len: 64 }
+      - { tag: 4, name: name, type: string, max_len: 64 }
+      - { tag: 5, name: faction, type: uint, max: 8 }
+      - { tag: 6, name: x, type: uint, max: 100000 }
+      - { tag: 7, name: y, type: uint, max: 100000 }
+      - { tag: 8, name: hp_pct, type: float }
+      - { tag: 9, name: speed, type: uint, max: 2000 }
+  EntityDespawn:
+    id: 53
+    dir: s2c
+    fields:
+      - { tag: 1, name: entity_id, type: uint }
+      - { tag: 2, name: reason, type: enum, enum: DespawnReason }
+  EntityMove:
+    id: 54
+    dir: s2c
+    fields:
+      - { tag: 1, name: entity_id, type: uint }
+      - { tag: 2, name: x, type: uint, max: 100000 }
+      - { tag: 3, name: y, type: uint, max: 100000 }
+      - { tag: 4, name: target_x, type: uint, max: 100000 }
+      - { tag: 5, name: target_y, type: uint, max: 100000 }
+      - { tag: 6, name: speed, type: uint, max: 2000 }
+      - { tag: 7, name: teleport, type: bool }
+  SpeedChange:
+    id: 55
+    dir: s2c
+    fields:
+      - { tag: 1, name: entity_id, type: uint }
+      - { tag: 2, name: speed, type: uint, max: 2000 }
+  HeroStats:
+    id: 56
+    dir: s2c
+    fields:
+      - { tag: 1, name: hp, type: uint }
+      - { tag: 2, name: max_hp, type: uint }
+      - { tag: 3, name: shield, type: uint }
+      - { tag: 4, name: max_shield, type: uint }
+      - { tag: 5, name: cargo, type: uint }
+      - { tag: 6, name: max_cargo, type: uint }
+      - { tag: 7, name: credits, type: uint }
+      - { tag: 8, name: experience, type: uint }
+      - { tag: 9, name: level, type: uint, max: 200 }
+  MoveIntent:
+    id: 60
+    dir: c2s
+    rate_limit: { per_second: 10, burst: 4 }
+    fields:
+      - { tag: 1, name: seq, type: uint }
+      - { tag: 2, name: target_x, type: uint, min: 0, max: 100000 }
+      - { tag: 3, name: target_y, type: uint, min: 0, max: 100000 }
+
+  # ============ 100-149 · Combate ============
+  SelectTarget:
+    id: 100
+    dir: c2s
+    rate_limit: { per_second: 6, burst: 4 }
+    fields:
+      - { tag: 1, name: entity_id, type: uint }             # 0 = deseleccionar
+  TargetInfo:
+    id: 101
+    dir: s2c
+    fields:
+      - { tag: 1, name: entity_id, type: uint }
+      - { tag: 2, name: hp, type: uint }
+      - { tag: 3, name: max_hp, type: uint }
+      - { tag: 4, name: shield, type: uint }
+      - { tag: 5, name: max_shield, type: uint }
+  LaserToggle:
+    id: 102
+    dir: c2s
+    rate_limit: { per_second: 4, burst: 3 }
+    fields:
+      - { tag: 1, name: active, type: bool }
+  AttackEvent:
+    id: 103
+    dir: s2c
+    fields:
+      - { tag: 1, name: attacker_id, type: uint }
+      - { tag: 2, name: target_id, type: uint }
+      - { tag: 3, name: weapon, type: enum, enum: Weapon }
+      - { tag: 4, name: damage, type: uint }
+      - { tag: 5, name: target_hp, type: uint }             # POST-daño, siempre
+      - { tag: 6, name: target_shield, type: uint }
+      - { tag: 7, name: missed, type: bool }
+  EntityDestroyed:
+    id: 104
+    dir: s2c
+    fields:
+      - { tag: 1, name: entity_id, type: uint }
+      - { tag: 2, name: killer_id, type: uint }
+  RespawnOptions:
+    id: 105
+    dir: s2c
+    fields:
+      - { tag: 1, name: options, type: struct, struct: RespawnOption, repeated: true }
+      - { tag: 2, name: cause, type: enum, enum: DeathCause }
+      - { tag: 3, name: killer_name, type: string, max_len: 64 }
+  RespawnSelect:
+    id: 106
+    dir: c2s
+    rate_limit: { per_second: 2, burst: 2 }
+    fields:
+      - { tag: 1, name: option_id, type: uint, max: 16 }
+
+  # ============ 150-199 · Loot y economía del slice ============
+  BoxSpawn:
+    id: 150
+    dir: s2c
+    fields:
+      - { tag: 1, name: box_id, type: uint }
+      - { tag: 2, name: box_type, type: string, max_len: 32 }
+      - { tag: 3, name: x, type: uint, max: 100000 }
+      - { tag: 4, name: y, type: uint, max: 100000 }
+  BoxDespawn:
+    id: 151
+    dir: s2c
+    fields:
+      - { tag: 1, name: box_id, type: uint }
+      - { tag: 2, name: reason, type: enum, enum: BoxDespawnReason }
+  CollectBox:
+    id: 152
+    dir: c2s
+    rate_limit: { per_second: 4, burst: 3 }
+    fields:
+      - { tag: 1, name: request_id, type: uint }
+      - { tag: 2, name: box_id, type: uint }
+  CollectResult:
+    id: 153
+    dir: s2c
+    fields:
+      - { tag: 1, name: request_id, type: uint }
+      - { tag: 2, name: drops, type: struct, struct: MaterialAmount, repeated: true }
+  StorageState:
+    id: 154
+    dir: s2c
+    fields:
+      - { tag: 1, name: materials, type: struct, struct: MaterialAmount, repeated: true }
+  StorageDelta:
+    id: 155
+    dir: s2c
+    fields:
+      - { tag: 1, name: material_id, type: string, max_len: 64 }
+      - { tag: 2, name: delta, type: sint }                  # puede ser negativo (refinado, venta)
+      - { tag: 3, name: reason, type: enum, enum: StorageReason }
+  SellToNpc:
+    id: 156
+    dir: c2s
+    rate_limit: { per_second: 2, burst: 2 }
+    fields:
+      - { tag: 1, name: request_id, type: uint }
+      - { tag: 2, name: material_id, type: string, max_len: 64 }
+      - { tag: 3, name: amount, type: uint, min: 1, max: 1000000 }
+  SellResult:
+    id: 157
+    dir: s2c
+    fields:
+      - { tag: 1, name: request_id, type: uint }
+      - { tag: 2, name: credits_gained, type: uint }
+      - { tag: 3, name: new_credits, type: uint }
+
+  # ============ 200-249 · Chat ============
+  ChatSend:
+    id: 200
+    dir: c2s
+    rate_limit: { per_second: 2, burst: 5 }
+    fields:
+      - { tag: 1, name: request_id, type: uint }
+      - { tag: 2, name: channel, type: enum, enum: ChatChannel }
+      - { tag: 3, name: text, type: string, max_len: 256 }
+  ChatMessage:
+    id: 201
+    dir: s2c
+    fields:
+      - { tag: 1, name: channel, type: enum, enum: ChatChannel }
+      - { tag: 2, name: from_name, type: string, max_len: 64 }
+      - { tag: 3, name: from_clan, type: string, max_len: 16 }
+      - { tag: 4, name: text, type: string, max_len: 256 }
+      - { tag: 5, name: server_time_ms, type: uint }
+  ChatSystem:
+    id: 202
+    dir: s2c
+    fields:
+      - { tag: 1, name: text_key, type: string, max_len: 64 }
+      - { tag: 2, name: params, type: string, max_len: 128, repeated: true }
+  ChatWhisper:
+    id: 203
+    dir: c2s
+    rate_limit: { per_second: 2, burst: 4 }
+    fields:
+      - { tag: 1, name: peer_name, type: string, max_len: 64 }   # destino (c2s) u origen (s2c)
+      - { tag: 2, name: text, type: string, max_len: 256 }
+
+# Rangos reservados (sin mensajes en v1): 250-299 misiones · 300-349 grupo ·
+# 350-399 mercado · 400-449 materializador · 450-499 PET · 500+ libre.
