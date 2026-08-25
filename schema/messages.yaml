@@ -40,6 +40,14 @@ structs:
     fields:
       - { tag: 1, name: material_id, type: string, max_len: 64 }
       - { tag: 2, name: price_credits, type: uint }
+  # Portales del mapa: viajan COMPLETOS al entrar (spec §relevancia), nunca por rango
+  MapPortal:
+    fields:
+      - { tag: 1, name: portal_id, type: uint }
+      - { tag: 2, name: x, type: uint, max: 100000 }
+      - { tag: 3, name: y, type: uint, max: 100000 }
+      - { tag: 4, name: target_map_code, type: string, max_len: 16 }
+      - { tag: 5, name: is_working, type: bool }
 
 messages:
   # ============ 1-49 · Sesión ============
@@ -119,6 +127,8 @@ messages:
       - { tag: 6, name: station_x, type: uint, max: 100000 }
       - { tag: 7, name: station_y, type: uint, max: 100000 }
       - { tag: 8, name: station_range, type: uint, max: 10000 }
+      # los portales visibles del mapa, completos (no entran por relevancia)
+      - { tag: 9, name: portals, type: struct, struct: MapPortal, repeated: true }
   EntitySpawn:
     id: 52
     dir: s2c

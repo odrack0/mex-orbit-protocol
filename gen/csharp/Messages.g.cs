@@ -273,6 +273,54 @@ public sealed class MaterialPrice
     internal static MaterialPrice DecodeStruct(ReadOnlySpan<byte> b) => DecodeFrom(b, 0);
 }
 
+public sealed class MapPortal
+{
+    public ulong PortalId;
+    public ulong X;
+    public ulong Y;
+    public string TargetMapCode = "";
+    public bool IsWorking;
+
+    public void Validate()
+    {
+        if (X > 100000) throw new ProtocolViolationException("MapPortal.x > 100000");
+        if (Y > 100000) throw new ProtocolViolationException("MapPortal.y > 100000");
+        if (TargetMapCode.Length > 16) throw new ProtocolViolationException("MapPortal.target_map_code demasiado largo");
+    }
+
+    internal void EncodeFields(MemoryStream s)
+    {
+        Wire.WriteTag(s, 1, 0); Wire.WriteVarint(s, PortalId);
+        Wire.WriteTag(s, 2, 0); Wire.WriteVarint(s, X);
+        Wire.WriteTag(s, 3, 0); Wire.WriteVarint(s, Y);
+        Wire.WriteTag(s, 4, 2); Wire.WriteString(s, TargetMapCode);
+        Wire.WriteTag(s, 5, 0); Wire.WriteVarint(s, IsWorking ? 1UL : 0UL);
+    }
+
+    internal static MapPortal DecodeFrom(ReadOnlySpan<byte> b, int pos)
+    {
+        var m = new MapPortal();
+        while (pos < b.Length)
+        {
+            ulong key = Wire.ReadVarint(b, ref pos);
+            int tag = (int)(key >> 3), wt = (int)(key & 7);
+            switch (tag)
+            {
+                case 1: m.PortalId = Wire.ReadVarint(b, ref pos); break;
+                case 2: m.X = Wire.ReadVarint(b, ref pos); break;
+                case 3: m.Y = Wire.ReadVarint(b, ref pos); break;
+                case 4: m.TargetMapCode = Wire.ReadString(b, ref pos); break;
+                case 5: m.IsWorking = Wire.ReadVarint(b, ref pos) != 0; break;
+                default: Wire.Skip(b, ref pos, wt); break;
+            }
+        }
+        m.Validate();
+        return m;
+    }
+
+    internal static MapPortal DecodeStruct(ReadOnlySpan<byte> b) => DecodeFrom(b, 0);
+}
+
 public sealed class Hello
 {
     public const int MsgId = 1;
@@ -843,6 +891,7 @@ public sealed class EnterMap
     public ulong StationX;
     public ulong StationY;
     public ulong StationRange;
+    public List<MapPortal> Portals = new();
 
     public void Validate()
     {
@@ -855,6 +904,10 @@ public sealed class EnterMap
         if (StationX > 100000) throw new ProtocolViolationException("EnterMap.station_x > 100000");
         if (StationY > 100000) throw new ProtocolViolationException("EnterMap.station_y > 100000");
         if (StationRange > 10000) throw new ProtocolViolationException("EnterMap.station_range > 10000");
+        foreach (var v in Portals)
+        {
+            v.Validate();
+        }
     }
 
     internal void EncodeFields(MemoryStream s)
@@ -867,6 +920,10 @@ public sealed class EnterMap
         Wire.WriteTag(s, 6, 0); Wire.WriteVarint(s, StationX);
         Wire.WriteTag(s, 7, 0); Wire.WriteVarint(s, StationY);
         Wire.WriteTag(s, 8, 0); Wire.WriteVarint(s, StationRange);
+        foreach (var v in Portals)
+        {
+            Wire.WriteTag(s, 9, 2); Wire.WriteStruct(s, v.EncodeFields);
+        }
     }
 
     internal static EnterMap DecodeFrom(ReadOnlySpan<byte> b, int pos)
@@ -886,6 +943,7 @@ public sealed class EnterMap
                 case 6: m.StationX = Wire.ReadVarint(b, ref pos); break;
                 case 7: m.StationY = Wire.ReadVarint(b, ref pos); break;
                 case 8: m.StationRange = Wire.ReadVarint(b, ref pos); break;
+                case 9: m.Portals.Add(MapPortal.DecodeStruct(Wire.ReadSlice(b, ref pos))); break;
                 default: Wire.Skip(b, ref pos, wt); break;
             }
         }
