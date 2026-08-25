@@ -132,6 +132,8 @@ messages:
       - { tag: 7, name: y, type: uint, max: 100000 }
       - { tag: 8, name: hp_pct, type: float }
       - { tag: 9, name: speed, type: uint, max: 2000 }
+      # el escudo es su propia barra (v1 no tiene nano-casco: solo dos)
+      - { tag: 10, name: shield_pct, type: float }
   EntityDespawn:
     id: 53
     dir: s2c

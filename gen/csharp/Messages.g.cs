@@ -923,6 +923,7 @@ public sealed class EntitySpawn
     public ulong Y;
     public float HpPct;
     public ulong Speed;
+    public float ShieldPct;
 
     public void Validate()
     {
@@ -945,6 +946,7 @@ public sealed class EntitySpawn
         Wire.WriteTag(s, 7, 0); Wire.WriteVarint(s, Y);
         Wire.WriteTag(s, 8, 5); Wire.WriteF32(s, HpPct);
         Wire.WriteTag(s, 9, 0); Wire.WriteVarint(s, Speed);
+        Wire.WriteTag(s, 10, 5); Wire.WriteF32(s, ShieldPct);
     }
 
     internal static EntitySpawn DecodeFrom(ReadOnlySpan<byte> b, int pos)
@@ -965,6 +967,7 @@ public sealed class EntitySpawn
                 case 7: m.Y = Wire.ReadVarint(b, ref pos); break;
                 case 8: m.HpPct = Wire.ReadF32(b, ref pos); break;
                 case 9: m.Speed = Wire.ReadVarint(b, ref pos); break;
+                case 10: m.ShieldPct = Wire.ReadF32(b, ref pos); break;
                 default: Wire.Skip(b, ref pos, wt); break;
             }
         }
