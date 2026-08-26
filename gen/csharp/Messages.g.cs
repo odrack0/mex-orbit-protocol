@@ -2485,6 +2485,70 @@ public sealed class JumpRequest
     }
 }
 
+public sealed class JumpHandoff
+{
+    public const int MsgId = 163;
+    public ulong RequestId;
+    public string MapCode = "";
+    public string Host = "";
+    public ulong Port;
+    public bool IsTls;
+
+    public void Validate()
+    {
+        if (MapCode.Length > 16) throw new ProtocolViolationException("JumpHandoff.map_code demasiado largo");
+        if (Host.Length > 128) throw new ProtocolViolationException("JumpHandoff.host demasiado largo");
+        if (Port > 65535) throw new ProtocolViolationException("JumpHandoff.port > 65535");
+    }
+
+    internal void EncodeFields(MemoryStream s)
+    {
+        Wire.WriteTag(s, 1, 0); Wire.WriteVarint(s, RequestId);
+        Wire.WriteTag(s, 2, 2); Wire.WriteString(s, MapCode);
+        Wire.WriteTag(s, 3, 2); Wire.WriteString(s, Host);
+        Wire.WriteTag(s, 4, 0); Wire.WriteVarint(s, Port);
+        Wire.WriteTag(s, 5, 0); Wire.WriteVarint(s, IsTls ? 1UL : 0UL);
+    }
+
+    internal static JumpHandoff DecodeFrom(ReadOnlySpan<byte> b, int pos)
+    {
+        var m = new JumpHandoff();
+        while (pos < b.Length)
+        {
+            ulong key = Wire.ReadVarint(b, ref pos);
+            int tag = (int)(key >> 3), wt = (int)(key & 7);
+            switch (tag)
+            {
+                case 1: m.RequestId = Wire.ReadVarint(b, ref pos); break;
+                case 2: m.MapCode = Wire.ReadString(b, ref pos); break;
+                case 3: m.Host = Wire.ReadString(b, ref pos); break;
+                case 4: m.Port = Wire.ReadVarint(b, ref pos); break;
+                case 5: m.IsTls = Wire.ReadVarint(b, ref pos) != 0; break;
+                default: Wire.Skip(b, ref pos, wt); break;
+            }
+        }
+        m.Validate();
+        return m;
+    }
+
+    public byte[] Encode()
+    {
+        Validate();
+        var s = new MemoryStream();
+        Wire.WriteVarint(s, 163);
+        EncodeFields(s);
+        return s.ToArray();
+    }
+
+    public static JumpHandoff Decode(ReadOnlySpan<byte> b)
+    {
+        int pos = 0;
+        ulong id = Wire.ReadVarint(b, ref pos);
+        if (id != 163) throw new ProtocolViolationException($"msg_id {id} != 163");
+        return DecodeFrom(b, pos);
+    }
+}
+
 public sealed class ChatSend
 {
     public const int MsgId = 200;

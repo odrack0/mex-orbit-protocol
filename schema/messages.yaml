@@ -343,6 +343,20 @@ messages:
       - { tag: 1, name: request_id, type: uint }
       - { tag: 2, name: portal_id, type: uint }
 
+  # El destino lo sirve OTRO servidor (o el mismo: el cliente no lo sabe ni le
+  # importa). Trae donde reconectar; la credencial NO viaja aqui porque el
+  # cliente ya tiene la suya — el token de reconexion — y el estado del jugador
+  # ya esta persistido en el mapa destino cuando este mensaje sale.
+  JumpHandoff:
+    id: 163
+    dir: s2c
+    fields:
+      - { tag: 1, name: request_id, type: uint }
+      - { tag: 2, name: map_code, type: string, max_len: 16 }
+      - { tag: 3, name: host, type: string, max_len: 128 }
+      - { tag: 4, name: port, type: uint, max: 65535 }
+      - { tag: 5, name: is_tls, type: bool }
+
   # ============ 200-249 · Chat ============
   ChatSend:
     id: 200
