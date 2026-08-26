@@ -331,6 +331,18 @@ messages:
       - { tag: 1, name: in_range, type: bool }
       - { tag: 2, name: station_id, type: uint }
 
+  # El salto de sector. El exito NO tiene mensaje propio: se anuncia con un
+  # EnterMap nuevo, que es exactamente lo que el cliente necesita recibir y ya
+  # sabe procesar. Un "JumpOk" seria un mensaje que no aporta estado.
+  # El rechazo va por ErrorReply (TOO_FAR / GONE / INVALID): nunca silencio.
+  JumpRequest:
+    id: 162
+    dir: c2s
+    rate_limit: { per_second: 1, burst: 2 }
+    fields:
+      - { tag: 1, name: request_id, type: uint }
+      - { tag: 2, name: portal_id, type: uint }
+
   # ============ 200-249 · Chat ============
   ChatSend:
     id: 200

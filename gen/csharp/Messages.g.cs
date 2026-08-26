@@ -2433,6 +2433,58 @@ public sealed class StationRange
     }
 }
 
+public sealed class JumpRequest
+{
+    public const int MsgId = 162;
+    public ulong RequestId;
+    public ulong PortalId;
+
+    public void Validate()
+    {
+    }
+
+    internal void EncodeFields(MemoryStream s)
+    {
+        Wire.WriteTag(s, 1, 0); Wire.WriteVarint(s, RequestId);
+        Wire.WriteTag(s, 2, 0); Wire.WriteVarint(s, PortalId);
+    }
+
+    internal static JumpRequest DecodeFrom(ReadOnlySpan<byte> b, int pos)
+    {
+        var m = new JumpRequest();
+        while (pos < b.Length)
+        {
+            ulong key = Wire.ReadVarint(b, ref pos);
+            int tag = (int)(key >> 3), wt = (int)(key & 7);
+            switch (tag)
+            {
+                case 1: m.RequestId = Wire.ReadVarint(b, ref pos); break;
+                case 2: m.PortalId = Wire.ReadVarint(b, ref pos); break;
+                default: Wire.Skip(b, ref pos, wt); break;
+            }
+        }
+        m.Validate();
+        return m;
+    }
+
+    public byte[] Encode()
+    {
+        Validate();
+        var s = new MemoryStream();
+        Wire.WriteVarint(s, 162);
+        EncodeFields(s);
+        return s.ToArray();
+    }
+
+    public static JumpRequest Decode(ReadOnlySpan<byte> b)
+    {
+        int pos = 0;
+        ulong id = Wire.ReadVarint(b, ref pos);
+        if (id != 162) throw new ProtocolViolationException($"msg_id {id} != 162");
+        return DecodeFrom(b, pos);
+    }
+}
+
 public sealed class ChatSend
 {
     public const int MsgId = 200;
