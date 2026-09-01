@@ -2,6 +2,14 @@
 # Fuente de verdad del contrato: docs/protocolo-v1.md §4. Una sola definición -> C# y GDScript.
 # Reglas: los tags jamás se renumeran; campos nuevos = tags nuevos; los rangos y
 # rate limits son parte del contrato y se generan en ambos lados.
+#
+# Coordenadas de entidades y cajas (x, y, target_*) van en `sint` (zigzag): la
+# zona radiactiva vive MAS ALLA del limite del mapa por los cuatro lados, y por
+# el lado del 0 eso es negativo. `min: -10000` es un tope estructural, no el
+# margen — el margen real (1000) es un dial del server que clampea; el cliente
+# lo replica. MapPortal/EnterMap se quedan en uint: el mobiliario nunca sale.
+# (1-sep-2026: pasaron de uint a sint SIN renumerar — es un cambio de encoding
+# del mismo tag, asi que cliente y server se despliegan JUNTOS.)
 protocol_version: 1
 
 enums:
@@ -140,8 +148,8 @@ messages:
       - { tag: 3, name: type_id, type: string, max_len: 64 }
       - { tag: 4, name: name, type: string, max_len: 64 }
       - { tag: 5, name: faction, type: uint, max: 8 }
-      - { tag: 6, name: x, type: uint, max: 100000 }
-      - { tag: 7, name: y, type: uint, max: 100000 }
+      - { tag: 6, name: x, type: sint, min: -10000, max: 110000 }
+      - { tag: 7, name: y, type: sint, min: -10000, max: 110000 }
       - { tag: 8, name: hp_pct, type: float }
       - { tag: 9, name: speed, type: uint, max: 2000 }
       # el escudo es su propia barra (v1 no tiene nano-casco: solo dos)
@@ -157,10 +165,10 @@ messages:
     dir: s2c
     fields:
       - { tag: 1, name: entity_id, type: uint }
-      - { tag: 2, name: x, type: uint, max: 100000 }
-      - { tag: 3, name: y, type: uint, max: 100000 }
-      - { tag: 4, name: target_x, type: uint, max: 100000 }
-      - { tag: 5, name: target_y, type: uint, max: 100000 }
+      - { tag: 2, name: x, type: sint, min: -10000, max: 110000 }
+      - { tag: 3, name: y, type: sint, min: -10000, max: 110000 }
+      - { tag: 4, name: target_x, type: sint, min: -10000, max: 110000 }
+      - { tag: 5, name: target_y, type: sint, min: -10000, max: 110000 }
       - { tag: 6, name: speed, type: uint, max: 2000 }
       - { tag: 7, name: teleport, type: bool }
   SpeedChange:
@@ -188,8 +196,8 @@ messages:
     rate_limit: { per_second: 10, burst: 4 }
     fields:
       - { tag: 1, name: seq, type: uint }
-      - { tag: 2, name: target_x, type: uint, min: 0, max: 100000 }
-      - { tag: 3, name: target_y, type: uint, min: 0, max: 100000 }
+      - { tag: 2, name: target_x, type: sint, min: -10000, max: 110000 }
+      - { tag: 3, name: target_y, type: sint, min: -10000, max: 110000 }
 
   # ============ 100-149 · Combate ============
   SelectTarget:
@@ -256,8 +264,9 @@ messages:
     fields:
       - { tag: 1, name: box_id, type: uint }
       - { tag: 2, name: box_type, type: string, max_len: 32 }
-      - { tag: 3, name: x, type: uint, max: 100000 }
-      - { tag: 4, name: y, type: uint, max: 100000 }
+      # una nave destruida en la zona radiactiva suelta su caja AHI, en negativo
+      - { tag: 3, name: x, type: sint, min: -10000, max: 110000 }
+      - { tag: 4, name: y, type: sint, min: -10000, max: 110000 }
   BoxDespawn:
     id: 151
     dir: s2c

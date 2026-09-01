@@ -62,7 +62,7 @@ S→C  ResumeOk   { }  + re-sincronización completa (igual que EnterMap)
 - **Tick fijo del server: 80 ms (12,5 Hz)** — hereda el ritmo real del prototipo (~84 ms) como punto de partida calibrable.
 - **Relevancia por rango** (valores iniciales, calibrables en BD): naves/NPCs 2000 unidades, cajas/minas 1250; portales, estaciones y POIs se envían completos al entrar al mapa. El objetivo seleccionado nunca sale de relevancia.
 - **Movimiento**:
-  - `C→S MoveIntent{ seq, target_x, target_y }` — solo intención. El server **clampea el destino a los límites del mapa** (adiós al Moving eterno del §7b) y valida cadencia.
+  - `C→S MoveIntent{ seq, target_x, target_y }` — solo intención. El server **clampea el destino a los límites del mapa más el margen de la zona radiactiva** (adiós al Moving eterno del §7b) y valida cadencia. Las coordenadas van en `sint`: por el lado del 0 la zona radiactiva es negativa.
   - `S→C EntityMove{ entity_id, x, y, target_x, target_y, speed, teleport? }` — **incluido el propio héroe**: eco autoritativo con la posición de origen; el cliente predice en optimista y **se reconcilia** contra el eco (el legado no corregía nunca).
   - Interpolación lineal en cliente con el par destino+velocidad (tiempo se deriva; no se transmite redundante).
 - **Cambio de mapa**: mensaje explícito `EnterMap{ map_id, limits_x, limits_y, zone_flags }` seguido de la sincronización de entidades. El tamaño del mapa **se transmite**, no se adivina por id.

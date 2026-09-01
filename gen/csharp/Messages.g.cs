@@ -978,8 +978,8 @@ public sealed class EntitySpawn
     public string TypeId = "";
     public string Name = "";
     public ulong Faction;
-    public ulong X;
-    public ulong Y;
+    public long X;
+    public long Y;
     public float HpPct;
     public ulong Speed;
     public float ShieldPct;
@@ -989,8 +989,10 @@ public sealed class EntitySpawn
         if (TypeId.Length > 64) throw new ProtocolViolationException("EntitySpawn.type_id demasiado largo");
         if (Name.Length > 64) throw new ProtocolViolationException("EntitySpawn.name demasiado largo");
         if (Faction > 8) throw new ProtocolViolationException("EntitySpawn.faction > 8");
-        if (X > 100000) throw new ProtocolViolationException("EntitySpawn.x > 100000");
-        if (Y > 100000) throw new ProtocolViolationException("EntitySpawn.y > 100000");
+        if (X < -10000) throw new ProtocolViolationException("EntitySpawn.x < -10000");
+        if (X > 110000) throw new ProtocolViolationException("EntitySpawn.x > 110000");
+        if (Y < -10000) throw new ProtocolViolationException("EntitySpawn.y < -10000");
+        if (Y > 110000) throw new ProtocolViolationException("EntitySpawn.y > 110000");
         if (Speed > 2000) throw new ProtocolViolationException("EntitySpawn.speed > 2000");
     }
 
@@ -1001,8 +1003,8 @@ public sealed class EntitySpawn
         Wire.WriteTag(s, 3, 2); Wire.WriteString(s, TypeId);
         Wire.WriteTag(s, 4, 2); Wire.WriteString(s, Name);
         Wire.WriteTag(s, 5, 0); Wire.WriteVarint(s, Faction);
-        Wire.WriteTag(s, 6, 0); Wire.WriteVarint(s, X);
-        Wire.WriteTag(s, 7, 0); Wire.WriteVarint(s, Y);
+        Wire.WriteTag(s, 6, 0); Wire.WriteVarint(s, Wire.Zig(X));
+        Wire.WriteTag(s, 7, 0); Wire.WriteVarint(s, Wire.Zig(Y));
         Wire.WriteTag(s, 8, 5); Wire.WriteF32(s, HpPct);
         Wire.WriteTag(s, 9, 0); Wire.WriteVarint(s, Speed);
         Wire.WriteTag(s, 10, 5); Wire.WriteF32(s, ShieldPct);
@@ -1022,8 +1024,8 @@ public sealed class EntitySpawn
                 case 3: m.TypeId = Wire.ReadString(b, ref pos); break;
                 case 4: m.Name = Wire.ReadString(b, ref pos); break;
                 case 5: m.Faction = Wire.ReadVarint(b, ref pos); break;
-                case 6: m.X = Wire.ReadVarint(b, ref pos); break;
-                case 7: m.Y = Wire.ReadVarint(b, ref pos); break;
+                case 6: m.X = Wire.Zag(Wire.ReadVarint(b, ref pos)); break;
+                case 7: m.Y = Wire.Zag(Wire.ReadVarint(b, ref pos)); break;
                 case 8: m.HpPct = Wire.ReadF32(b, ref pos); break;
                 case 9: m.Speed = Wire.ReadVarint(b, ref pos); break;
                 case 10: m.ShieldPct = Wire.ReadF32(b, ref pos); break;
@@ -1108,29 +1110,33 @@ public sealed class EntityMove
 {
     public const int MsgId = 54;
     public ulong EntityId;
-    public ulong X;
-    public ulong Y;
-    public ulong TargetX;
-    public ulong TargetY;
+    public long X;
+    public long Y;
+    public long TargetX;
+    public long TargetY;
     public ulong Speed;
     public bool Teleport;
 
     public void Validate()
     {
-        if (X > 100000) throw new ProtocolViolationException("EntityMove.x > 100000");
-        if (Y > 100000) throw new ProtocolViolationException("EntityMove.y > 100000");
-        if (TargetX > 100000) throw new ProtocolViolationException("EntityMove.target_x > 100000");
-        if (TargetY > 100000) throw new ProtocolViolationException("EntityMove.target_y > 100000");
+        if (X < -10000) throw new ProtocolViolationException("EntityMove.x < -10000");
+        if (X > 110000) throw new ProtocolViolationException("EntityMove.x > 110000");
+        if (Y < -10000) throw new ProtocolViolationException("EntityMove.y < -10000");
+        if (Y > 110000) throw new ProtocolViolationException("EntityMove.y > 110000");
+        if (TargetX < -10000) throw new ProtocolViolationException("EntityMove.target_x < -10000");
+        if (TargetX > 110000) throw new ProtocolViolationException("EntityMove.target_x > 110000");
+        if (TargetY < -10000) throw new ProtocolViolationException("EntityMove.target_y < -10000");
+        if (TargetY > 110000) throw new ProtocolViolationException("EntityMove.target_y > 110000");
         if (Speed > 2000) throw new ProtocolViolationException("EntityMove.speed > 2000");
     }
 
     internal void EncodeFields(MemoryStream s)
     {
         Wire.WriteTag(s, 1, 0); Wire.WriteVarint(s, EntityId);
-        Wire.WriteTag(s, 2, 0); Wire.WriteVarint(s, X);
-        Wire.WriteTag(s, 3, 0); Wire.WriteVarint(s, Y);
-        Wire.WriteTag(s, 4, 0); Wire.WriteVarint(s, TargetX);
-        Wire.WriteTag(s, 5, 0); Wire.WriteVarint(s, TargetY);
+        Wire.WriteTag(s, 2, 0); Wire.WriteVarint(s, Wire.Zig(X));
+        Wire.WriteTag(s, 3, 0); Wire.WriteVarint(s, Wire.Zig(Y));
+        Wire.WriteTag(s, 4, 0); Wire.WriteVarint(s, Wire.Zig(TargetX));
+        Wire.WriteTag(s, 5, 0); Wire.WriteVarint(s, Wire.Zig(TargetY));
         Wire.WriteTag(s, 6, 0); Wire.WriteVarint(s, Speed);
         Wire.WriteTag(s, 7, 0); Wire.WriteVarint(s, Teleport ? 1UL : 0UL);
     }
@@ -1145,10 +1151,10 @@ public sealed class EntityMove
             switch (tag)
             {
                 case 1: m.EntityId = Wire.ReadVarint(b, ref pos); break;
-                case 2: m.X = Wire.ReadVarint(b, ref pos); break;
-                case 3: m.Y = Wire.ReadVarint(b, ref pos); break;
-                case 4: m.TargetX = Wire.ReadVarint(b, ref pos); break;
-                case 5: m.TargetY = Wire.ReadVarint(b, ref pos); break;
+                case 2: m.X = Wire.Zag(Wire.ReadVarint(b, ref pos)); break;
+                case 3: m.Y = Wire.Zag(Wire.ReadVarint(b, ref pos)); break;
+                case 4: m.TargetX = Wire.Zag(Wire.ReadVarint(b, ref pos)); break;
+                case 5: m.TargetY = Wire.Zag(Wire.ReadVarint(b, ref pos)); break;
                 case 6: m.Speed = Wire.ReadVarint(b, ref pos); break;
                 case 7: m.Teleport = Wire.ReadVarint(b, ref pos) != 0; break;
                 default: Wire.Skip(b, ref pos, wt); break;
@@ -1307,22 +1313,22 @@ public sealed class MoveIntent
 {
     public const int MsgId = 60;
     public ulong Seq;
-    public ulong TargetX;
-    public ulong TargetY;
+    public long TargetX;
+    public long TargetY;
 
     public void Validate()
     {
-        if (TargetX < 0) throw new ProtocolViolationException("MoveIntent.target_x < 0");
-        if (TargetX > 100000) throw new ProtocolViolationException("MoveIntent.target_x > 100000");
-        if (TargetY < 0) throw new ProtocolViolationException("MoveIntent.target_y < 0");
-        if (TargetY > 100000) throw new ProtocolViolationException("MoveIntent.target_y > 100000");
+        if (TargetX < -10000) throw new ProtocolViolationException("MoveIntent.target_x < -10000");
+        if (TargetX > 110000) throw new ProtocolViolationException("MoveIntent.target_x > 110000");
+        if (TargetY < -10000) throw new ProtocolViolationException("MoveIntent.target_y < -10000");
+        if (TargetY > 110000) throw new ProtocolViolationException("MoveIntent.target_y > 110000");
     }
 
     internal void EncodeFields(MemoryStream s)
     {
         Wire.WriteTag(s, 1, 0); Wire.WriteVarint(s, Seq);
-        Wire.WriteTag(s, 2, 0); Wire.WriteVarint(s, TargetX);
-        Wire.WriteTag(s, 3, 0); Wire.WriteVarint(s, TargetY);
+        Wire.WriteTag(s, 2, 0); Wire.WriteVarint(s, Wire.Zig(TargetX));
+        Wire.WriteTag(s, 3, 0); Wire.WriteVarint(s, Wire.Zig(TargetY));
     }
 
     internal static MoveIntent DecodeFrom(ReadOnlySpan<byte> b, int pos)
@@ -1335,8 +1341,8 @@ public sealed class MoveIntent
             switch (tag)
             {
                 case 1: m.Seq = Wire.ReadVarint(b, ref pos); break;
-                case 2: m.TargetX = Wire.ReadVarint(b, ref pos); break;
-                case 3: m.TargetY = Wire.ReadVarint(b, ref pos); break;
+                case 2: m.TargetX = Wire.Zag(Wire.ReadVarint(b, ref pos)); break;
+                case 3: m.TargetY = Wire.Zag(Wire.ReadVarint(b, ref pos)); break;
                 default: Wire.Skip(b, ref pos, wt); break;
             }
         }
@@ -1765,22 +1771,24 @@ public sealed class BoxSpawn
     public const int MsgId = 150;
     public ulong BoxId;
     public string BoxType = "";
-    public ulong X;
-    public ulong Y;
+    public long X;
+    public long Y;
 
     public void Validate()
     {
         if (BoxType.Length > 32) throw new ProtocolViolationException("BoxSpawn.box_type demasiado largo");
-        if (X > 100000) throw new ProtocolViolationException("BoxSpawn.x > 100000");
-        if (Y > 100000) throw new ProtocolViolationException("BoxSpawn.y > 100000");
+        if (X < -10000) throw new ProtocolViolationException("BoxSpawn.x < -10000");
+        if (X > 110000) throw new ProtocolViolationException("BoxSpawn.x > 110000");
+        if (Y < -10000) throw new ProtocolViolationException("BoxSpawn.y < -10000");
+        if (Y > 110000) throw new ProtocolViolationException("BoxSpawn.y > 110000");
     }
 
     internal void EncodeFields(MemoryStream s)
     {
         Wire.WriteTag(s, 1, 0); Wire.WriteVarint(s, BoxId);
         Wire.WriteTag(s, 2, 2); Wire.WriteString(s, BoxType);
-        Wire.WriteTag(s, 3, 0); Wire.WriteVarint(s, X);
-        Wire.WriteTag(s, 4, 0); Wire.WriteVarint(s, Y);
+        Wire.WriteTag(s, 3, 0); Wire.WriteVarint(s, Wire.Zig(X));
+        Wire.WriteTag(s, 4, 0); Wire.WriteVarint(s, Wire.Zig(Y));
     }
 
     internal static BoxSpawn DecodeFrom(ReadOnlySpan<byte> b, int pos)
@@ -1794,8 +1802,8 @@ public sealed class BoxSpawn
             {
                 case 1: m.BoxId = Wire.ReadVarint(b, ref pos); break;
                 case 2: m.BoxType = Wire.ReadString(b, ref pos); break;
-                case 3: m.X = Wire.ReadVarint(b, ref pos); break;
-                case 4: m.Y = Wire.ReadVarint(b, ref pos); break;
+                case 3: m.X = Wire.Zag(Wire.ReadVarint(b, ref pos)); break;
+                case 4: m.Y = Wire.Zag(Wire.ReadVarint(b, ref pos)); break;
                 default: Wire.Skip(b, ref pos, wt); break;
             }
         }
