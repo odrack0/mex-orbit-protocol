@@ -989,10 +989,10 @@ public sealed class EntitySpawn
         if (TypeId.Length > 64) throw new ProtocolViolationException("EntitySpawn.type_id demasiado largo");
         if (Name.Length > 64) throw new ProtocolViolationException("EntitySpawn.name demasiado largo");
         if (Faction > 8) throw new ProtocolViolationException("EntitySpawn.faction > 8");
-        if (X < -10000) throw new ProtocolViolationException("EntitySpawn.x < -10000");
-        if (X > 110000) throw new ProtocolViolationException("EntitySpawn.x > 110000");
-        if (Y < -10000) throw new ProtocolViolationException("EntitySpawn.y < -10000");
-        if (Y > 110000) throw new ProtocolViolationException("EntitySpawn.y > 110000");
+        if (X < -100000) throw new ProtocolViolationException("EntitySpawn.x < -100000");
+        if (X > 200000) throw new ProtocolViolationException("EntitySpawn.x > 200000");
+        if (Y < -100000) throw new ProtocolViolationException("EntitySpawn.y < -100000");
+        if (Y > 200000) throw new ProtocolViolationException("EntitySpawn.y > 200000");
         if (Speed > 2000) throw new ProtocolViolationException("EntitySpawn.speed > 2000");
     }
 
@@ -1119,14 +1119,14 @@ public sealed class EntityMove
 
     public void Validate()
     {
-        if (X < -10000) throw new ProtocolViolationException("EntityMove.x < -10000");
-        if (X > 110000) throw new ProtocolViolationException("EntityMove.x > 110000");
-        if (Y < -10000) throw new ProtocolViolationException("EntityMove.y < -10000");
-        if (Y > 110000) throw new ProtocolViolationException("EntityMove.y > 110000");
-        if (TargetX < -10000) throw new ProtocolViolationException("EntityMove.target_x < -10000");
-        if (TargetX > 110000) throw new ProtocolViolationException("EntityMove.target_x > 110000");
-        if (TargetY < -10000) throw new ProtocolViolationException("EntityMove.target_y < -10000");
-        if (TargetY > 110000) throw new ProtocolViolationException("EntityMove.target_y > 110000");
+        if (X < -100000) throw new ProtocolViolationException("EntityMove.x < -100000");
+        if (X > 200000) throw new ProtocolViolationException("EntityMove.x > 200000");
+        if (Y < -100000) throw new ProtocolViolationException("EntityMove.y < -100000");
+        if (Y > 200000) throw new ProtocolViolationException("EntityMove.y > 200000");
+        if (TargetX < -100000) throw new ProtocolViolationException("EntityMove.target_x < -100000");
+        if (TargetX > 200000) throw new ProtocolViolationException("EntityMove.target_x > 200000");
+        if (TargetY < -100000) throw new ProtocolViolationException("EntityMove.target_y < -100000");
+        if (TargetY > 200000) throw new ProtocolViolationException("EntityMove.target_y > 200000");
         if (Speed > 2000) throw new ProtocolViolationException("EntityMove.speed > 2000");
     }
 
@@ -1318,10 +1318,10 @@ public sealed class MoveIntent
 
     public void Validate()
     {
-        if (TargetX < -10000) throw new ProtocolViolationException("MoveIntent.target_x < -10000");
-        if (TargetX > 110000) throw new ProtocolViolationException("MoveIntent.target_x > 110000");
-        if (TargetY < -10000) throw new ProtocolViolationException("MoveIntent.target_y < -10000");
-        if (TargetY > 110000) throw new ProtocolViolationException("MoveIntent.target_y > 110000");
+        if (TargetX < -100000) throw new ProtocolViolationException("MoveIntent.target_x < -100000");
+        if (TargetX > 200000) throw new ProtocolViolationException("MoveIntent.target_x > 200000");
+        if (TargetY < -100000) throw new ProtocolViolationException("MoveIntent.target_y < -100000");
+        if (TargetY > 200000) throw new ProtocolViolationException("MoveIntent.target_y > 200000");
     }
 
     internal void EncodeFields(MemoryStream s)
@@ -1777,10 +1777,10 @@ public sealed class BoxSpawn
     public void Validate()
     {
         if (BoxType.Length > 32) throw new ProtocolViolationException("BoxSpawn.box_type demasiado largo");
-        if (X < -10000) throw new ProtocolViolationException("BoxSpawn.x < -10000");
-        if (X > 110000) throw new ProtocolViolationException("BoxSpawn.x > 110000");
-        if (Y < -10000) throw new ProtocolViolationException("BoxSpawn.y < -10000");
-        if (Y > 110000) throw new ProtocolViolationException("BoxSpawn.y > 110000");
+        if (X < -100000) throw new ProtocolViolationException("BoxSpawn.x < -100000");
+        if (X > 200000) throw new ProtocolViolationException("BoxSpawn.x > 200000");
+        if (Y < -100000) throw new ProtocolViolationException("BoxSpawn.y < -100000");
+        if (Y > 200000) throw new ProtocolViolationException("BoxSpawn.y > 200000");
     }
 
     internal void EncodeFields(MemoryStream s)
