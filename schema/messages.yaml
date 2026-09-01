@@ -9,7 +9,9 @@ enums:
   DespawnReason: { RANGE: 0, LEFT: 1, DEAD: 2 }
   BoxDespawnReason: { COLLECTED: 0, EXPIRED: 1, RANGE: 2 }
   Weapon: { LASER: 0 }
-  DeathCause: { NPC: 0, PLAYER: 1 }
+  # RADIATION: morir por quedarse en la zona radiactiva (mas alla del limite
+  # del mapa) demasiado tiempo — no hay agresor, la nave se la cobra sola.
+  DeathCause: { NPC: 0, PLAYER: 1, RADIATION: 2 }
   StorageReason: { COLLECT: 0, REFINE_IN: 1, REFINE_OUT: 2, SELL: 3, UNLOAD: 4 }
   ChatChannel: { GLOBAL: 0, FACTION: 1, CLAN: 2 }
   ErrorCode:
